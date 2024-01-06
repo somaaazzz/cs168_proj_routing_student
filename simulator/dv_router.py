@@ -68,8 +68,8 @@ class DVRouter(DVRouterBase):
         # `port` should have been added to `peer_tables` by `handle_link_up`
         # when the link came up.
         assert port in self.ports.get_all_ports(), "Link should be up, but is not."
-
-        # TODO: fill this in!
+        
+        self.table[host] = TableEntry(dst=host, port=port, latency=0.1 , expire_time=FOREVER)
 
     def handle_data_packet(self, packet, in_port):
         """
