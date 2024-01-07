@@ -68,7 +68,7 @@ class DVRouter(DVRouterBase):
         # `port` should have been added to `peer_tables` by `handle_link_up`
         # when the link came up.
         assert port in self.ports.get_all_ports(), "Link should be up, but is not."
-        
+
         self.table[host] = TableEntry(dst=host, port=port, latency=0.1 , expire_time=FOREVER)
 
     def handle_data_packet(self, packet, in_port):
@@ -81,7 +81,12 @@ class DVRouter(DVRouterBase):
         :param in_port: the port from which the packet arrived.
         :return: nothing.
         """
-        # TODO: fill this in!
+        # if table has entry of the destination, forward it to the next router
+        entry = self.table.get(packet.dst)
+        if (entry is not None) and (entry.latency < INFINITY):
+            self.send(packet, port=entry.port, flood=False)
+
+
 
     def send_routes(self, force=False, single_port=None):
         """
