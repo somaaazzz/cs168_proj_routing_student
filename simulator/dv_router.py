@@ -136,13 +136,16 @@ class DVRouter(DVRouterBase):
         """
         # if cost of new advertisement <= old route, replace old entry with new advertised entry
         old_entry = self.table.get(route_dst)
-        new_route_cost = route_latency + self.ports.get_latency(port)
+        new_route_cost = min(route_latency + self.ports.get_latency(port), INFINITY)
         # if coming from the same port, take it
         # if old > new, take the new 
         if (old_entry is not None) and (port == old_entry.port):
-            self.table[route_dst] = TableEntry(dst=route_dst, port=port, latency=new_route_cost , expire_time=api.current_time() + 15)
+            self.table[route_dst] = TableEntry(dst=route_dst, port=port, latency=new_route_cost , expire_time=api.current_time() + self.ROUTE_TTL)
         elif (old_entry is None) or (old_entry.latency > new_route_cost):
-            self.table[route_dst] = TableEntry(dst=route_dst, port=port, latency=new_route_cost , expire_time=api.current_time() + 15)
+            self.table[route_dst] = TableEntry(dst=route_dst, port=port, latency=new_route_cost , expire_time=api.current_time() + self.ROUTE_TTL)
+
+
+
 
     def handle_link_up(self, port, latency):
         """
