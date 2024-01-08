@@ -69,7 +69,7 @@ class DVRouter(DVRouterBase):
         # when the link came up.
         assert port in self.ports.get_all_ports(), "Link should be up, but is not."
 
-        self.table[host] = TableEntry(dst=host, port=port, latency=0.1 , expire_time=FOREVER)
+        self.table[host] = TableEntry(dst=host, port=port, latency=self.ports.get_latency(port) , expire_time=FOREVER)
 
     def handle_data_packet(self, packet, in_port):
         """
@@ -99,7 +99,12 @@ class DVRouter(DVRouterBase):
                             be used in conjunction with handle_link_up.
         :return: nothing.
         """
-        # TODO: fill this in!
+        # send RoutePacket advertisement to all the neighbors
+        for entry in self.table.values():
+            packet = RoutePacket(destination=entry.dst, latency=entry.latency)
+            self.send(packet, flood=True)
+
+
 
     def expire_routes(self):
         """
@@ -117,7 +122,15 @@ class DVRouter(DVRouterBase):
         :param port: the port that the advertisement arrived on.
         :return: nothing.
         """
-        # TODO: fill this in!
+        # if cost of new advertisement <= old route, replace old entry with new advertised entry
+        old_entry = self.table.get(route_dst)
+        new_route_cost = route_latency + self.ports.get_latency(port)
+        # if coming from the same port, take it
+        # if old > new, take the new 
+        if (old_entry is not None) and (port == old_entry.port):
+            self.table[route_dst] = TableEntry(dst=route_dst, port=port, latency=new_route_cost , expire_time=api.current_time() + 15)
+        elif (old_entry is None) or (old_entry.latency > new_route_cost):
+            self.table[route_dst] = TableEntry(dst=route_dst, port=port, latency=new_route_cost , expire_time=api.current_time() + 15)
 
     def handle_link_up(self, port, latency):
         """
