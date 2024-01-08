@@ -111,7 +111,10 @@ class DVRouter(DVRouterBase):
         Clears out expired routes from table.
         accordingly.
         """
-        # TODO: fill this in!
+        # called prtiodically
+        for key in list(self.table):
+            if self.table[key].expire_time <= api.current_time():
+                self.table.pop(key)
 
     def handle_route_advertisement(self, route_dst, route_latency, port):
         """
