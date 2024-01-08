@@ -102,7 +102,12 @@ class DVRouter(DVRouterBase):
         # send RoutePacket advertisement to all the neighbors
         for entry in self.table.values():
             packet = RoutePacket(destination=entry.dst, latency=entry.latency)
-            self.send(packet, flood=True)
+            if self.SPLIT_HORIZON:
+                for port in self.ports.get_all_ports():
+                    if entry.port != port:
+                        self.send(packet, port, flood=False)
+            else:
+                self.send(packet, flood=True)
 
 
 
