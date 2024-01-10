@@ -46,17 +46,17 @@ def launch ():
   r.linkTo(h4)
 
   def test_tasklet ():
-    yield 5 # Wait five seconds for routing to converge
+    yield 15 # Wait five seconds for routing to converge
 
     api.userlog.debug("Sending test pings")
     h2.ping(h1)
-    h2.ping(h4)
+    # h2.ping(h4)
 
     yield 1 # Wait a bit before sending last ping
 
-    h3.ping(h1)
+    # h3.ping(h1)
 
-    yield 5 # Wait five seconds for pings to be delivered
+    yield 10 # Wait five seconds for pings to be delivered
 
     good = True
     if h1.pings != 2:

@@ -53,10 +53,6 @@ class DVRouter(DVRouterBase):
         self.table = Table()
         self.table.owner = self
 
-        # record previous route
-        # history[dst] = previous_port
-        self.history = {}
-
 
     def add_static_route(self, host, port):
         """
@@ -107,23 +103,23 @@ class DVRouter(DVRouterBase):
         # if single port, only send to specified port
         if single_port:
             self.send_route_to_port(single_port)
-            return
-        # if not single port, advertise to all neighbors
-        for port in self.ports.get_all_ports():
-            self.send_route_to_port(port, force)
+        else:
+            # if not single port, advertise to all neighbors
+            for port in self.ports.get_all_ports():
+                self.send_route_to_port(port, force)
                 
     # send route advertisement to a single port
     def send_route_to_port(self, port, force=True):
         for advertisement_route in self.table.values():     
             if advertisement_route.port != port:
                 packet = RoutePacket(destination=advertisement_route.dst, latency=advertisement_route.latency)
-                self.send(packet, port, flood=False)
+                self.send(packet, port)
             elif self.POISON_REVERSE:
                 poisoned_packet = RoutePacket(destination=advertisement_route.dst, latency=INFINITY)
-                self.send(poisoned_packet, port, flood=False)
+                self.send(poisoned_packet, port)
             elif not self.SPLIT_HORIZON:
                 packet = RoutePacket(destination=advertisement_route.dst, latency=advertisement_route.latency)
-                self.send(packet, port, flood=False)
+                self.send(packet, port)
 
 
     def expire_routes(self):
@@ -157,6 +153,7 @@ class DVRouter(DVRouterBase):
         new_route_cost = min(route_latency + self.ports.get_latency(port), INFINITY)
         if old_entry is None or port==old_entry.port or old_entry.latency > new_route_cost:
             self.table[route_dst] = TableEntry(dst=route_dst, port=port, latency=new_route_cost , expire_time=api.current_time() + self.ROUTE_TTL)
+            self.send_routes(force=False)
 
 
 
@@ -181,6 +178,11 @@ class DVRouter(DVRouterBase):
         :returns: nothing.
         """
         self.ports.remove_port(port)
+        if self.POISON_ON_LINK_DOWN:
+            for key in list(self.table):
+                if self.table[key].port == port:
+                    self.table.pop(key)
+
 
 
     
